@@ -225,7 +225,6 @@ app.get('/api/bookings/today', async (req, res) => {
     .select('*')
     .gte('created_at', today)
     .order('booking_time', { ascending: true });
-
   if (error) return res.status(500).json({ error });
   res.json(data);
 });
@@ -233,18 +232,15 @@ app.get('/api/bookings/today', async (req, res) => {
 // 통계
 app.get('/api/stats', async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
-
   const { count: todayBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .gte('created_at', today);
-
   const { count: photoAgree } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('photo_agree', true)
     .gte('created_at', today);
-
   res.json({
     today_bookings: todayBookings || 0,
     photo_agree_count: photoAgree || 0,
