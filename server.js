@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const Anthropic = require('@anthropic-ai/sdk');
+const OpenAI = require('openai');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -10,7 +10,7 @@ app.use(express.json());
 // ────────────────────────────────────────────
 // 클라이언트 초기화
 // ────────────────────────────────────────────
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 const INSTAGRAM_TOKEN = process.env.INSTAGRAM_PAGE_TOKEN;
@@ -76,20 +76,20 @@ async function saveBooking(senderId, bookingData) {
 // ────────────────────────────────────────────
 // Claude API 호출
 // ────────────────────────────────────────────
-async function askClaude(senderId, userMessage) {
+async function askAI(senderId, userMessage) {
   const history = await getHistory(senderId);
 
-  const response = await claude.messages.create({
-    model: 'claude-sonnet-4-6',
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
     max_tokens: 1024,
-    system: SYSTEM_PROMPT,
     messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
       ...history,
       { role: 'user', content: userMessage }
     ]
   });
 
-  return response.content[0].text;
+  return response.choices[0].message.content;
 }
 
 // ────────────────────────────────────────────
@@ -192,8 +192,8 @@ app.post('/webhook', async (req, res) => {
 
         console.log(`📩 수신 [${senderId}]: ${userMessage}`);
 
-        // Claude 응답 생성
-        let replyText = await askClaude(senderId, userMessage);
+        // AI 응답 생성
+        let replyText = await askAI(senderId, userMessage);
 
         // 예약 확정 처리
         replyText = await handleBookingConfirm(senderId, replyText);
